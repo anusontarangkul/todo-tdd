@@ -10,6 +10,7 @@ TodoModel.findById = jest.fn()
 TodoModel.findByIdAndUpdate = jest.fn()
 
 let req, res, next;
+const todoId = "62600f5ee47674e86c34f3b7"
 
 beforeEach(() => {
 
@@ -23,9 +24,9 @@ describe("TodoController.getTodoById", () => {
         expect(typeof TodoController.getTodoById).toBe('function')
     })
     it("should call todoModel.findById with params", async () => {
-        req.params.todoId = "62600f5ee47674e86c34f3b7"
+        req.params.todoId = todoId
         await TodoController.getTodoById(req, res, next)
-        expect(TodoModel.findById).toHaveBeenCalledWith("62600f5ee47674e86c34f3b7")
+        expect(TodoModel.findById).toHaveBeenCalledWith(todoId)
     })
     it("should return json body and response code 200", async () => {
         TodoModel.findById.mockReturnValue(newTodo)
@@ -106,6 +107,37 @@ describe('TodoController.createTodo', () => {
     describe("TodoController.updateTodo", () => {
         it("should have a updateTodo function", () => {
             expect(typeof TodoController.updateTodo).toBe("function")
+        })
+        it("should update with TodoModel.findByIdAndUpdate", async () => {
+            req.params.todoId = todoId;
+            req.body = newTodo
+            await TodoController.updateTodo(req, res, next)
+            expect(TodoModel.findByIdAndUpdate).toHaveBeenCalledWith(todoId, newTodo, {
+                new: true,
+                useFindAndModify: false
+            })
+        })
+        it("should return a response with json data and http code 200", async () => {
+            req.params.todoId = todoId;
+            req.body = newTodo
+            TodoModel.findByIdAndUpdate.mockReturnValue(newTodo)
+            await TodoController.updateTodo(req, res, next)
+            expect(res._isEndCalled()).toBeTruthy()
+            expect(res.statusCode).toBe(200)
+            expect(res._getJSONData()).toStrictEqual(newTodo)
+        })
+        it("should handle errors", async () => {
+            const errorMessage = { message: "updated failed" }
+            const rejectedPromise = Promise.reject(errorMessage)
+            TodoModel.findByIdAndUpdate.mockReturnValue(rejectedPromise)
+            await TodoController.updateTodo(req, res, next)
+            expect(next).toBeCalledWith(errorMessage)
+        })
+        it("should return 404 if todo doesn't exist", async () => {
+            TodoModel.findByIdAndUpdate.mockReturnValue(null)
+            await TodoController.updateTodo(req, res, next)
+            expect(res.statusCode).toBe(404)
+            expect(res._isEndCalled()).toBeTruthy()
         })
     })
 })
