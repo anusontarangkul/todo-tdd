@@ -4,6 +4,8 @@ const newTodo = require('../mock-data/new-todo.json')
 
 const endpointUrl = "/todos/"
 let firstTodo, newTodoCreated
+const testData = { title: "Make integration test for PUT", done: true }
+const nonExisitingId = "62600f5ee47674e86c34f3b1"
 
 describe(endpointUrl, () => {
     test("GET " + endpointUrl, async () => {
@@ -21,7 +23,7 @@ describe(endpointUrl, () => {
         expect(response.body.done).toBe(firstTodo.done)
     })
     test("GET todo by id doesn't exist " + endpointUrl + ":todoId", async () => {
-        const response = await request(app).get(endpointUrl + "62600f5ee47674e86c34f3b1")
+        const response = await request(app).get(endpointUrl + nonExisitingId)
         expect(response.statusCode).toBe(404)
     })
     it("POST " + endpointUrl, async () => {
@@ -43,12 +45,24 @@ describe(endpointUrl, () => {
                 "Todo validation failed: done: Path `done` is required."
         })
     })
-    it("PUT " + endpointUrl, async () => {
-        const testData = { title: "Make integration test for PUT", done: true }
-        const res = await request(app).put(endpointUrl + newTodoCreated).send(testData)
-        expect(res.statusCode).toBe(200)
-        expect(res.body.title).toBe(testData.title)
-        expect(res.body.done).toBe(testData.done)
+    test("PUT " + endpointUrl, async () => {
+
+        const response = await request(app).put(endpointUrl + newTodoCreated).send(testData)
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toBe(testData.title)
+        expect(response.body.done).toBe(testData.done)
+    })
+    test("DELETE " + endpointUrl + ":todoId", async () => {
+        const response = await request(app)
+            .delete(endpointUrl + newTodoCreated).send()
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toBe(testData.title)
+        expect(response.body.done).toBe(testData.done)
+    })
+    test("HTTP DELETE 404", async () => {
+        const response = await request(app)
+            .delete(endpointUrl + nonExisitingId).send()
+        expect(response.statusCode).toBe(404)
     })
 })
 
